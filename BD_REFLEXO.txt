@@ -1,0 +1,42 @@
+CREATE DATABASE IF NOT EXISTS reflexo_db;
+
+USE reflexo_db;
+
+-- Tabla para los medicamentos
+CREATE TABLE items (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    sku VARCHAR(255) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    type ENUM('pastilla', 'jarabe', 'inyectable') NOT NULL,
+    disease_category VARCHAR(255) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    stock INT NOT NULL,
+    version INT NOT NULL DEFAULT 1,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX (sku),
+    INDEX (updated_at)
+);
+
+-- Tabla para las órdenes de venta
+CREATE TABLE orders (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(255) UNIQUE NOT NULL,
+    status ENUM('NEW', 'PAID', 'CANCELLED', 'ROLLEDBACK') NOT NULL DEFAULT 'NEW',
+    total DECIMAL(10, 2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX (code),
+    INDEX (created_at)
+);
+
+-- Tabla para las líneas de las órdenes (detalles de cada ítem en la orden)
+CREATE TABLE order_lines (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id INT,
+    item_id INT,
+    quantity INT NOT NULL,
+    unit_price DECIMAL(10, 2) NOT NULL,
+    line_total DECIMAL(10, 2) NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(id),
+    FOREIGN KEY (item_id) REFERENCES items(id)
+);
