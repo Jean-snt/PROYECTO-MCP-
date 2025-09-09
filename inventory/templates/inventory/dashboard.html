@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>Dashboard - Sistema de Inventario Reflexo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            min-height: 100vh;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 2px solid #00ff88;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #00ff88;
+            font-size: 2.5rem;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .inventory-section {
+            background: rgba(45, 45, 45, 0.8);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+        }
+
+        .inventory-section h2 {
+            color: #00ff88;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .inventory-section h2::before {
+            content: "📦";
+            font-size: 1.5rem;
+        }
+
+        .inventory-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(26, 26, 26, 0.8);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .inventory-table th {
+            background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
+            color: #1a1a1a;
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .inventory-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(0, 255, 136, 0.1);
+            transition: background-color 0.3s ease;
+        }
+
+        .inventory-table tr:hover {
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        .stock-badge {
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .stock-high { background: #00ff88; color: #1a1a1a; }
+        .stock-medium { background: #ffaa00; color: #1a1a1a; }
+        .stock-low { background: #ff4444; color: #ffffff; }
+
+        .chatbot-section {
+            background: rgba(45, 45, 45, 0.8);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            display: flex;
+            flex-direction: column;
+            height: fit-content;
+            min-height: 800px;
+        }
+
+        .chatbot-section h2 {
+            color: #00ff88;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chatbot-section h2::before {
+            content: "🤖";
+            font-size: 1.5rem;
+        }
+
+        .chat-history {
+            flex: 1;
+            background: rgba(26, 26, 26, 0.8);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            overflow-y: auto;
+            max-height: 600px;
+            min-height: 500px;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 10px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .message.user {
+            background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
+            color: #1a1a1a;
+            margin-left: 20%;
+            text-align: right;
+        }
+
+        .message.bot {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            margin-right: 20%;
+            border-left: 3px solid #00ff88;
+        }
+
+        /* Estilos para Markdown en mensajes del bot */
+        .message.bot strong {
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .message.bot ul {
+            margin: 10px 0;
+            padding-left: 0;
+            list-style: none;
+        }
+
+        .message.bot li {
+            margin: 5px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .message.bot li:before {
+            content: '•';
+            color: #00ff88;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        .message-time {
+            font-size: 0.7rem;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 15px;
+            background: rgba(26, 26, 26, 0.8);
+            border: 2px solid rgba(0, 255, 136, 0.3);
+            border-radius: 25px;
+            color: #ffffff;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input:focus {
+            border-color: #00ff88;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .send-button {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
+            color: #1a1a1a;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .send-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.4);
+        }
+
+        .send-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #00ff88;
+            font-style: italic;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .pulse {
+            animation: pulse 1.5s infinite;
+        }
+
+        .menu-btn {
+            padding: 14px 20px;
+            background: linear-gradient(135deg, #00ff88 0%, #00cc6a 100%);
+            color: #1a1a1a;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            text-align: center;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 255, 136, 0.2);
+        }
+
+        .menu-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 255, 136, 0.4);
+        }
+
+        .menu-btn:active {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .inventory-table {
+                font-size: 0.9rem;
+            }
+            
+            .chatbot-section {
+                min-height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Dashboard Reflexo</h1>
+            <p>Sistema de Gestión de Inventario Médico</p>
+        </div>
+
+        <div class="inventory-section">
+            <h2>Inventario de Medicamentos</h2>
+            <table class="inventory-table">
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>Nombre</th>
+                        <th>Tipo</th>
+                        <th>Precio</th>
+                        <th>Stock</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>{{ item.sku|default:"N/A" }}</td>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.type|default:"N/A" }}</td>
+                        <td>S/. {{ item.price|floatformat:2 }}</td>
+                        <td>{{ item.stock }}</td>
+                        <td>
+                            {% if item.stock > 50 %}
+                                <span class="stock-badge stock-high">Alto</span>
+                            {% elif item.stock > 10 %}
+                                <span class="stock-badge stock-medium">Medio</span>
+                            {% else %}
+                                <span class="stock-badge stock-low">Bajo</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 20px; color: #888;">
+                            No hay medicamentos en el inventario
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="chatbot-section">
+            <h2>Asistente de Inventario</h2>
+            <div class="chat-history" id="chatHistory">
+                <div class="message bot">
+                    <div>¡Hola! Soy tu asistente de inventario. Selecciona una opción o escribe tu comando:</div>
+                    <div class="menu-options" style="margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; max-width: 500px;">
+                        <button class="menu-btn" onclick="chatBot.selectOption('crear')">🆕 Crear Medicamento</button>
+
+                        <button class="menu-btn" onclick="chatBot.selectOption('eliminar')">🗑️ Eliminar Medicamento</button>
+                        <button class="menu-btn" onclick="chatBot.selectOption('modificar')">✏️ Modificar Medicamento</button>
+                    </div>
+                    <div class="message-time">Sistema</div>
+                </div>
+            </div>
+            <div class="loading" id="loading">
+                <span class="pulse">Procesando...</span>
+            </div>
+            <div class="chat-input-container">
+                <input type="text" class="chat-input" id="chatInput" placeholder="Escribe tu comando aquí..." autocomplete="off">
+                <button class="send-button" id="sendButton">Enviar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class ChatBot {
+            constructor() {
+                this.chatHistory = document.getElementById('chatHistory');
+                this.chatInput = document.getElementById('chatInput');
+                this.sendButton = document.getElementById('sendButton');
+                this.loading = document.getElementById('loading');
+                
+                // Sistema de contexto para conversaciones interactivas
+                this.conversationContext = {
+                    active: false,
+                    tool: null,
+                    step: null,
+                    data: {}
+                };
+                
+                this.initializeEventListeners();
+            }
+
+            initializeEventListeners() {
+                this.sendButton.addEventListener('click', () => this.sendMessage());
+                this.chatInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.sendMessage();
+                    }
+                });
+            }
+
+            async sendMessage() {
+                const message = this.chatInput.value.trim();
+                if (!message) return;
+
+                // Mostrar mensaje del usuario
+                this.addMessage(message, 'user');
+                this.chatInput.value = '';
+                this.setLoading(true);
+
+                try {
+                    // Procesar el comando
+                    const response = await this.processCommand(message);
+                    this.addMessage(response, 'bot');
+                } catch (error) {
+                    this.addMessage('Error: ' + error.message, 'bot');
+                } finally {
+                    this.setLoading(false);
+                }
+            }
+
+            async processCommand(message) {
+                try {
+                    // Usar el nuevo endpoint inteligente
+                    const response = await fetch('/chatbot_smart/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': this.getCSRFToken()
+                        },
+                        body: JSON.stringify({
+                            message: message,
+                            context: this.conversationContext.active ? {
+                                tool: this.conversationContext.tool,
+                                step: this.conversationContext.step,
+                                data: this.conversationContext.data
+                            } : null
+                        })
+                    });
+
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        const text = await response.text();
+                        throw new Error('El servidor devolvió una respuesta no JSON: ' + text.substring(0, 100));
+                    }
+
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Manejar respuestas interactivas
+                        if (data.interactive) {
+                            // Actualizar contexto de conversación
+                            this.conversationContext.active = true;
+                            this.conversationContext.tool = data.tool || 'modify_medicine';
+                            this.conversationContext.step = data.step || 'unknown';
+                            if (data.context_data) {
+                                this.conversationContext.data = { ...this.conversationContext.data, ...data.context_data };
+                            }
+                            return data.message || 'Respuesta interactiva recibida';
+                        } else {
+                            // Limpiar contexto si la operación se completó
+                            this.conversationContext.active = false;
+                            this.conversationContext.tool = null;
+                            this.conversationContext.step = null;
+                            this.conversationContext.data = {};
+                        }
+                        return this.formatSuccessResponse(data.tool || 'unknown', data);
+                    } else {
+                        // Manejar respuestas de error interactivas
+                        if (data.interactive) {
+                            // Mantener contexto de conversación activo
+                            this.conversationContext.active = true;
+                            this.conversationContext.tool = data.tool || 'modify_medicine';
+                            this.conversationContext.step = data.step || 'unknown';
+                            if (data.context_data) {
+                                this.conversationContext.data = { ...this.conversationContext.data, ...data.context_data };
+                            }
+                            
+                            let interactiveMessage = data.message || data.error || 'Error en proceso interactivo';
+                            if (data.suggestions) {
+                                interactiveMessage += '\n\n' + data.suggestions;
+                            }
+                            return interactiveMessage;
+                        }
+                        
+                        // Formatear respuesta de error con ayuda
+                        let errorMessage = data.error || 'Operación fallida';
+                        
+                        if (data.help) {
+                            errorMessage += '\n\n';
+                            
+                            if (data.help.message) {
+                                errorMessage += data.help.message + '\n\n';
+                            }
+                            
+                            if (data.help.format) {
+                                errorMessage += `📝 **Formato:** ${data.help.format}\n`;
+                            }
+                            
+                            if (data.help.example) {
+                                errorMessage += `📋 **Ejemplo:** ${data.help.example}\n`;
+                            }
+                            
+                            if (data.help.types) {
+                                errorMessage += `💡 **Tipos disponibles:** ${data.help.types.join(', ')}\n`;
+                            }
+                            
+                            if (data.help.categories) {
+                                errorMessage += `💡 **Categorías:** ${data.help.categories.join(', ')}\n`;
+                            }
+                            
+                            if (data.help.commands) {
+                                errorMessage += '\n**Comandos disponibles:**\n';
+                                data.help.commands.forEach(cmd => {
+                                    errorMessage += cmd + '\n';
+                                });
+                            }
+                        }
+                        
+                        return errorMessage;
+                    }
+                } catch (error) {
+                    return 'Error de conexión: ' + error.message;
+                }
+            }
+
+            parseCommand(message) {
+                const lowerMessage = message.toLowerCase();
+                
+                // Crear medicamento
+                if (lowerMessage.includes('crear') && (lowerMessage.includes('medicamento') || lowerMessage.includes('medicina'))) {
+                    const params = this.extractMedicineParams(message);
+                    // Si no se proporcionan parámetros, solicitar información
+                    if (Object.keys(params).length === 0) {
+                        return {
+                            tool: 'create_medicine_prompt',
+                            parameters: {}
+                        };
+                    }
+                    return {
+                        tool: 'create_medicine',
+                        parameters: params
+                    };
+                }
+                
+                // Realizar pedido
+                if (lowerMessage.includes('pedido') || lowerMessage.includes('orden')) {
+                    return {
+                        tool: 'place_order',
+                        parameters: this.extractOrderParams(message)
+                    };
+                }
+                
+
+                // Ajustar precio
+                if (lowerMessage.includes('precio')) {
+                    return {
+                        tool: 'adjust_price',
+                        parameters: this.extractPriceParams(message)
+                    };
+                }
+                
+                // Consultar item
+                if (lowerMessage.includes('consultar') || lowerMessage.includes('buscar')) {
+                    return {
+                        tool: 'get_item',
+                        parameters: this.extractItemParams(message)
+                    };
+                }
+                
+                // Revertir orden
+                if (lowerMessage.includes('revertir') || lowerMessage.includes('cancelar')) {
+                    return {
+                        tool: 'rollback_order',
+                        parameters: this.extractRollbackParams(message)
+                    };
+                }
+                
+                // Eliminar medicamento
+                if (lowerMessage.includes('eliminar') || lowerMessage.includes('borrar') || lowerMessage.includes('delete')) {
+                    return {
+                        tool: 'delete_medicine',
+                        parameters: this.extractDeleteParams(message)
+                    };
+                }
+                
+                return { tool: null, parameters: {} };
+            }
+
+            extractMedicineParams(message) {
+                // Ejemplo: "crear medicamento Aspirina tipo analgesico categoria dolor precio 15.50 stock 100"
+                const params = {};
+                const words = message.split(' ');
+                
+                for (let i = 0; i < words.length; i++) {
+                    if (words[i].toLowerCase() === 'medicamento' && words[i + 1]) {
+                        params.name = words[i + 1];
+                    }
+                    if (words[i].toLowerCase() === 'tipo' && words[i + 1]) {
+                        params.type = words[i + 1];
+                    }
+                    if (words[i].toLowerCase() === 'categoria' && words[i + 1]) {
+                        params.disease_category = words[i + 1];
+                    }
+                    if (words[i].toLowerCase() === 'precio' && words[i + 1]) {
+                        params.price = parseFloat(words[i + 1]);
+                    }
+                    if (words[i].toLowerCase() === 'stock' && words[i + 1]) {
+                        params.stock = parseInt(words[i + 1]);
+                    }
+                }
+                
+                return params;
+            }
+
+            extractOrderParams(message) {
+                // Ejemplo: "pedido SKU MED001 cantidad 5"
+                const params = { items: [] };
+                const words = message.split(' ');
+                
+                for (let i = 0; i < words.length; i++) {
+                    if (words[i].toLowerCase() === 'sku' && words[i + 1]) {
+                        const sku = words[i + 1];
+                        let quantity = 1;
+                        if (words[i + 2] && words[i + 3] && words[i + 2].toLowerCase() === 'cantidad') {
+                            quantity = parseInt(words[i + 3]);
+                        }
+                        params.items.push({ sku, quantity });
+                    }
+                }
+                
+                return params;
+            }
+
+
+
+            extractPriceParams(message) {
+                // Ejemplo: "ajustar precio SKU MED001 nuevo 25.00"
+                const params = {};
+                const words = message.split(' ');
+                
+                for (let i = 0; i < words.length; i++) {
+                    if (words[i].toLowerCase() === 'sku' && words[i + 1]) {
+                        params.sku = words[i + 1];
+                    }
+                    if ((words[i].toLowerCase() === 'nuevo' || words[i].toLowerCase() === 'precio') && words[i + 1]) {
+                        const price = parseFloat(words[i + 1]);
+                        if (!isNaN(price)) {
+                            params.new_price = price;
+                        }
+                    }
+                }
+                
+                return params;
+            }
+
+            extractItemParams(message) {
+                // Ejemplo: "consultar SKU MED001"
+                const params = {};
+                const words = message.split(' ');
+                
+                for (let i = 0; i < words.length; i++) {
+                    if (words[i].toLowerCase() === 'sku' && words[i + 1]) {
+                        params.sku = words[i + 1];
+                    }
+                }
+                
+                return params;
+            }
+
+            extractRollbackParams(message) {
+                // Ejemplo: "revertir orden ORD-123"
+                const params = {};
+                const words = message.split(' ');
+                
+                for (let i = 0; i < words.length; i++) {
+                    if ((words[i].toLowerCase() === 'orden' || words[i].toLowerCase() === 'order') && words[i + 1]) {
+                        params.order_code = words[i + 1];
+                    }
+                }
+                
+                return params;
+            }
+
+            extractDeleteParams(message) {
+                // Ejemplo: "eliminar medicamento ASP001" o "borrar sku ASP001"
+                const params = {};
+                const words = message.split(' ');
+                
+                for (let i = 0; i < words.length; i++) {
+                    if (words[i].toLowerCase() === 'sku' && words[i + 1]) {
+                        params.sku = words[i + 1];
+                    } else if ((words[i].toLowerCase() === 'medicamento' || words[i].toLowerCase() === 'medicina') && words[i + 1]) {
+                        params.sku = words[i + 1];
+                    }
+                }
+                
+                return params;
+            }
+
+            formatSuccessResponse(tool, data) {
+                switch (tool) {
+                    case 'create_medicine':
+                        return `✅ Medicamento creado exitosamente: ${data.name} (SKU: ${data.sku})`;
+                    case 'place_order':
+                        return `✅ Pedido realizado exitosamente. Código: ${data.order_code}, Total: S/. ${data.total}`;
+
+                    case 'adjust_price':
+                        return `✅ Precio actualizado a S/. ${data.new_price}`;
+                    case 'get_item':
+                        return `📋 **${data.name}**\nSKU: ${data.sku}\nTipo: ${data.type}\nPrecio: S/. ${data.price}\nStock: ${data.stock}`;
+                    case 'rollback_order':
+                        return `✅ ${data.message}`;
+                    case 'delete_medicine':
+                        return `✅ ${data.message}`;
+                    case 'modify_medicine':
+                        if (data.modified_item) {
+                            return `✅ ${data.message}\n\n📝 **Detalles del cambio:**\nMedicamento: ${data.modified_item.name}\nSKU: ${data.modified_item.sku}\nCampo modificado: ${data.modified_item.field_modified}\nValor anterior: ${data.modified_item.old_value}\nValor nuevo: ${data.modified_item.new_value}`;
+                        }
+                        return `✅ ${data.message}`;
+                    default:
+                        return '✅ Operación completada exitosamente';
+                }
+            }
+
+            // Función para convertir Markdown básico a HTML
+            markdownToHtml(text) {
+                return text
+                    // Convertir negritas **texto** a <strong>texto</strong>
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    // Convertir saltos de línea \n a <br>
+                    .replace(/\\n/g, '<br>')
+                    // Convertir saltos de línea reales a <br>
+                    .replace(/\n/g, '<br>')
+                    // Convertir viñetas • a HTML
+                    .replace(/^• (.*$)/gim, '<li>$1</li>')
+                    // Envolver listas en <ul>
+                    .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+                    // Convertir emojis y símbolos especiales
+                    .replace(/💡/g, '💡')
+                    .replace(/✅/g, '✅')
+                    .replace(/📋/g, '📋');
+            }
+
+            addMessage(text, sender) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}`;
+                
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('es-ES', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                
+                // Convertir Markdown a HTML si es un mensaje del bot
+                const formattedText = sender === 'bot' ? this.markdownToHtml(text) : text.replace(/\n/g, '<br>');
+                
+                messageDiv.innerHTML = `
+                    <div>${formattedText}</div>
+                    <div class="message-time">${timeString}</div>
+                `;
+                
+                this.chatHistory.appendChild(messageDiv);
+                this.chatHistory.scrollTop = this.chatHistory.scrollHeight;
+            }
+
+            setLoading(isLoading) {
+                this.loading.style.display = isLoading ? 'block' : 'none';
+                this.sendButton.disabled = isLoading;
+                this.chatInput.disabled = isLoading;
+            }
+
+            selectOption(option) {
+                let message = '';
+                switch(option) {
+                    case 'crear':
+                        message = 'crear nuevo medicamento';
+                        break;
+
+                    case 'eliminar':
+                        message = 'eliminar medicamento';
+                        break;
+                    case 'modificar':
+                        message = 'modificar medicamento';
+                        break;
+                }
+                
+                if (message) {
+                    this.chatInput.value = message;
+                    this.sendMessage();
+                }
+            }
+
+            getCSRFToken() {
+                // Primero intentar obtener el token del meta tag
+                const metaToken = document.querySelector('meta[name="csrf-token"]');
+                if (metaToken) {
+                    const token = metaToken.getAttribute('content');
+                    console.log('CSRF token from meta tag:', token);
+                    return token;
+                }
+                
+                // Si no está en el meta tag, buscar en las cookies
+                const cookies = document.cookie.split(';');
+                for (let cookie of cookies) {
+                    const [name, value] = cookie.trim().split('=');
+                    if (name === 'csrftoken') {
+                        console.log('CSRF token from cookie:', value);
+                        return value;
+                    }
+                }
+                console.log('No CSRF token found');
+                return '';
+            }
+        }
+
+        // Variable global para el chatbot
+        let chatBot;
+        
+        // Inicializar el chatbot cuando se carga la página
+        document.addEventListener('DOMContentLoaded', () => {
+            chatBot = new ChatBot();
+        });
+    </script>
+</body>
+</html>

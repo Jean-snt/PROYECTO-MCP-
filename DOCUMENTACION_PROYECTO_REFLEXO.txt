@@ -1,0 +1,387 @@
+================================================================================
+                    DOCUMENTACIÓN COMPLETA DEL PROYECTO REFLEXO
+================================================================================
+
+FECHA DE CREACIÓN: Enero 2025
+VERSIÓN DE DJANGO: 4.2.24
+BASE DE DATOS: MySQL (BD_REFLEXO)
+ESTADO: Configuración inicial completada y funcional
+
+================================================================================
+1. INFORMACIÓN GENERAL DEL PROYECTO
+================================================================================
+
+NOMBRE DEL PROYECTO: reflexo
+TIPO: Aplicación web Django para gestión de inventario farmacéutico
+PROPÓSITO: Sistema de gestión de inventario de medicamentos con funcionalidades
+           de control de stock, órdenes de compra y categorización por enfermedades
+
+UBICACIÓN DEL PROYECTO:
+C:\Users\alexm\OneDrive\Documentos\MCP_GRUPAL\reflexo\
+
+================================================================================
+2. ESTRUCTURA COMPLETA DEL PROYECTO
+================================================================================
+
+reflexo/
+├── manage.py                    # Script principal de Django para comandos administrativos
+├── reflexo/                     # Directorio principal del proyecto Django
+│   ├── __init__.py             # Marca el directorio como paquete Python
+│   ├── __pycache__/            # Archivos compilados de Python (generados automáticamente)
+│   ├── asgi.py                 # Configuración ASGI para despliegue asíncrono
+│   ├── settings.py             # Configuraciones principales del proyecto
+│   ├── urls.py                 # URLs principales del proyecto
+│   └── wsgi.py                 # Configuración WSGI para despliegue
+├── inventory/                   # Aplicación Django para gestión de inventario
+│   ├── __init__.py             # Marca el directorio como paquete Python
+│   ├── __pycache__/            # Archivos compilados de Python
+│   ├── admin.py                # Configuración del panel de administración
+│   ├── apps.py                 # Configuración de la aplicación
+│   ├── migrations/             # Directorio de migraciones de base de datos
+│   │   ├── __init__.py
+│   │   └── 0001_initial.py     # Migración inicial con modelos Item, Order, OrderLine
+│   ├── models.py               # Definición de modelos de datos
+│   ├── tests.py                # Archivos de pruebas unitarias
+│   └── views.py                # Vistas de la aplicación
+└── test_db_connection.py       # Script de prueba para verificar conexión MySQL
+
+================================================================================
+3. CONFIGURACIÓN DE BASE DE DATOS
+================================================================================
+
+TIPO DE BASE DE DATOS: MySQL
+NOMBRE DE LA BASE DE DATOS: BD_REFLEXO
+USUARIO: root
+CONTRASEÑA: 70526723Martel
+HOST: localhost
+PUERTO: 3306
+MOTOR DJANGO: django.db.backends.mysql
+
+CONFIGURACIÓN EN settings.py:
+```python
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'BD_REFLEXO',
+        'USER': 'root',
+        'PASSWORD': '70526723Martel',
+        'HOST': 'localhost',
+        'PORT': '3306',
+    }
+}
+```
+
+ESTADO DE MIGRACIONES:
+- Todas las migraciones aplicadas correctamente con --fake-initial
+- Tablas creadas: inventory_item, inventory_order, inventory_orderline
+- Sistema de migraciones sincronizado con base de datos existente
+
+================================================================================
+4. MODELOS DE DATOS DETALLADOS
+================================================================================
+
+4.1 MODELO ITEM (inventory_item)
+---------------------------------
+Propósito: Representa los medicamentos/productos en el inventario
+
+Campos:
+- sku (CharField, max_length=100, unique=True)
+  * Código único de identificación del producto
+  * Campo obligatorio y único en toda la base de datos
+
+- name (CharField, max_length=200)
+  * Nombre del medicamento/producto
+  * Campo obligatorio
+
+- type (CharField, max_length=20, choices)
+  * Tipo de medicamento con opciones predefinidas:
+    - 'pastilla': Pastilla
+    - 'jarabe': Jarabe
+    - 'inyectable': Inyectable
+
+- disease_category (CharField, max_length=100)
+  * Categoría de enfermedad que trata el medicamento
+  * Permite clasificación por tipo de dolencia
+
+- price (DecimalField, max_digits=10, decimal_places=2)
+  * Precio unitario del producto
+  * Formato: hasta 8 dígitos enteros y 2 decimales
+
+- stock (IntegerField)
+  * Cantidad disponible en inventario
+  * Número entero positivo o negativo
+
+- version (IntegerField, default=1)
+  * Control de versiones del producto
+  * Valor por defecto: 1
+
+Método __str__: Retorna "sku - name"
+
+4.2 MODELO ORDER (inventory_order)
+----------------------------------
+Propósito: Representa las órdenes de compra/venta
+
+Campos:
+- code (CharField, max_length=100, unique=True)
+  * Código único de la orden
+  * Campo obligatorio y único
+
+- status (CharField, max_length=20, choices)
+  * Estado de la orden con opciones:
+    - 'NEW': New (Nueva)
+    - 'PAID': Paid (Pagada)
+    - 'CANCELLED': Cancelled (Cancelada)
+    - 'ROLLEDBACK': Rolled Back (Revertida)
+
+- total (DecimalField, max_digits=10, decimal_places=2)
+  * Monto total de la orden
+  * Formato: hasta 8 dígitos enteros y 2 decimales
+
+Método __str__: Retorna "Order code - status"
+
+4.3 MODELO ORDERLINE (inventory_orderline)
+------------------------------------------
+Propósito: Representa las líneas individuales de cada orden
+
+Campos:
+- order (ForeignKey to Order, on_delete=CASCADE)
+  * Relación con el modelo Order
+  * Eliminación en cascada: si se elimina la orden, se eliminan sus líneas
+
+- item (ForeignKey to Item, on_delete=CASCADE)
+  * Relación con el modelo Item
+  * Eliminación en cascada: si se elimina el item, se eliminan sus líneas
+
+- quantity (IntegerField)
+  * Cantidad del producto en esta línea de orden
+  * Número entero
+
+- unit_price (DecimalField, max_digits=10, decimal_places=2)
+  * Precio unitario del producto en el momento de la orden
+  * Puede diferir del precio actual del Item
+
+- line_total (DecimalField, max_digits=10, decimal_places=2)
+  * Total de esta línea (quantity * unit_price)
+  * Calculado y almacenado
+
+Método __str__: Retorna "order.code - item.name x quantity"
+
+================================================================================
+5. CONFIGURACIÓN DETALLADA DEL PROYECTO
+================================================================================
+
+5.1 ARCHIVO settings.py
+-----------------------
+SECRET_KEY: 'django-insecure-ch7gq83-i)8^a2ch@um*($f-&_3igbyiw(c4ih+i0hg5_ll#cx'
+DEBUG: True (modo desarrollo)
+ALLOWED_HOSTS: [] (vacío para desarrollo local)
+
+INSTALLED_APPS:
+- django.contrib.admin
+- django.contrib.auth
+- django.contrib.contenttypes
+- django.contrib.sessions
+- django.contrib.messages
+- django.contrib.staticfiles
+- inventory (aplicación personalizada)
+
+MIDDLEWARE: Configuración estándar de Django
+ROOT_URLCONF: 'reflexo.urls'
+WSGI_APPLICATION: 'reflexo.wsgi.application'
+
+INTERNACIONALIZACIÓN:
+- LANGUAGE_CODE: 'en-us'
+- TIME_ZONE: 'UTC'
+- USE_I18N: True
+- USE_TZ: True
+
+ARCHIVOS ESTÁTICOS:
+- STATIC_URL: 'static/'
+
+CAMPO CLAVE PRIMARIA:
+- DEFAULT_AUTO_FIELD: 'django.db.models.BigAutoField'
+
+5.2 ARCHIVO urls.py (Principal)
+-------------------------------
+Configuración básica con:
+- Importación de admin
+- Patrón de URL para admin: admin/
+- Listo para agregar URLs de la aplicación inventory
+
+================================================================================
+6. APLICACIÓN INVENTORY DETALLADA
+================================================================================
+
+6.1 ARCHIVO models.py
+--------------------
+Contiene los tres modelos principales del sistema:
+- Importa django.db.models
+- Define relaciones ForeignKey entre modelos
+- Implementa choices para campos con opciones limitadas
+- Incluye métodos __str__ para representación legible
+
+6.2 ARCHIVO admin.py
+-------------------
+Archivo estándar de Django para configuración del panel administrativo
+Estado: Sin configuración personalizada (listo para implementar)
+
+6.3 ARCHIVO apps.py
+------------------
+Configuración de la aplicación:
+```python
+class InventoryConfig(AppConfig):
+    default_auto_field = 'django.db.models.BigAutoField'
+    name = 'inventory'
+```
+
+6.4 ARCHIVO views.py
+-------------------
+Archivo estándar para vistas de Django
+Estado: Sin vistas implementadas (listo para desarrollo)
+
+6.5 ARCHIVO tests.py
+-------------------
+Archivo estándar para pruebas unitarias
+Estado: Sin pruebas implementadas (listo para desarrollo)
+
+6.6 DIRECTORIO migrations/
+--------------------------
+Contiene:
+- __init__.py: Marca como paquete Python
+- 0001_initial.py: Migración inicial que crea las tres tablas
+  * Crea modelo Item con todos sus campos
+  * Crea modelo Order con todos sus campos
+  * Crea modelo OrderLine con relaciones ForeignKey
+
+================================================================================
+7. SCRIPT DE VERIFICACIÓN
+================================================================================
+
+ARCHIVO: test_db_connection.py
+PROPÓSITO: Verificar la conexión y funcionalidad de la base de datos
+
+FUNCIONALIDADES:
+- Prueba conexión directa a MySQL
+- Verifica existencia de tablas
+- Cuenta registros en cada modelo
+- Confirma que las migraciones están aplicadas
+- Proporciona diagnóstico completo del estado de la BD
+
+RESULTADO DE LA ÚLTIMA EJECUCIÓN:
+✅ Conectado exitosamente a la base de datos: bd_reflexo
+✅ Modelo Item: 0 registros
+✅ Modelo Order: 0 registros
+✅ Modelo OrderLine: 0 registros
+✅ Tablas en la base de datos: 13
+✅ Tablas de inventory: ['inventory_item', 'inventory_order', 'inventory_orderline']
+
+================================================================================
+8. ESTADO ACTUAL DEL PROYECTO
+================================================================================
+
+COMPONENTES COMPLETADOS:
+✅ Proyecto Django creado y configurado
+✅ Aplicación inventory creada e integrada
+✅ Modelos de datos definidos y funcionales
+✅ Conexión MySQL configurada y verificada
+✅ Base de datos BD_REFLEXO creada
+✅ Migraciones generadas y aplicadas
+✅ Tablas creadas en MySQL
+✅ Sistema de verificación implementado
+
+COMPONENTES PENDIENTES:
+❌ Panel de administración personalizado
+❌ Vistas para CRUD de modelos
+❌ Templates HTML
+❌ URLs de la aplicación inventory
+❌ API REST (si se requiere)
+❌ Autenticación y autorización
+❌ Validaciones de negocio
+❌ Pruebas unitarias
+❌ Interfaz de usuario
+❌ Funcionalidades de búsqueda y filtrado
+
+================================================================================
+9. COMANDOS IMPORTANTES PARA EL DESARROLLO
+================================================================================
+
+COMANDOS DE GESTIÓN:
+- python manage.py runserver          # Iniciar servidor de desarrollo
+- python manage.py makemigrations     # Crear nuevas migraciones
+- python manage.py migrate            # Aplicar migraciones
+- python manage.py createsuperuser    # Crear usuario administrador
+- python manage.py collectstatic      # Recopilar archivos estáticos
+- python manage.py shell              # Abrir shell interactivo de Django
+
+COMANDOS DE VERIFICACIÓN:
+- python manage.py check              # Verificar configuración del proyecto
+- python manage.py showmigrations     # Mostrar estado de migraciones
+- python test_db_connection.py        # Ejecutar script de verificación personalizado
+
+================================================================================
+10. CONSIDERACIONES TÉCNICAS
+================================================================================
+
+REQUISITOS DEL SISTEMA:
+- Python 3.x
+- Django 4.2.24
+- MySQL Server
+- mysqlclient (conector Python-MySQL)
+
+SEGURIDAD:
+- SECRET_KEY debe cambiarse en producción
+- DEBUG debe ser False en producción
+- Credenciales de BD deben estar en variables de entorno
+- ALLOWED_HOSTS debe configurarse para producción
+
+RENDIMIENTO:
+- Índices de BD pueden optimizarse
+- Consultas pueden optimizarse con select_related/prefetch_related
+- Cache puede implementarse para consultas frecuentes
+
+ESCALABILIDAD:
+- Estructura preparada para agregar más aplicaciones
+- Modelos diseñados para extensión
+- Configuración modular y mantenible
+
+================================================================================
+11. PRÓXIMOS PASOS RECOMENDADOS
+================================================================================
+
+1. CONFIGURAR PANEL DE ADMINISTRACIÓN:
+   - Registrar modelos en admin.py
+   - Personalizar visualización de modelos
+   - Crear superusuario
+
+2. DESARROLLAR VISTAS Y TEMPLATES:
+   - Crear vistas para listar, crear, editar y eliminar items
+   - Implementar templates HTML con Bootstrap/CSS
+   - Configurar URLs de la aplicación
+
+3. IMPLEMENTAR LÓGICA DE NEGOCIO:
+   - Validaciones de stock
+   - Cálculos automáticos de totales
+   - Gestión de estados de órdenes
+
+4. AGREGAR FUNCIONALIDADES AVANZADAS:
+   - Sistema de búsqueda y filtros
+   - Reportes y estadísticas
+   - API REST con Django REST Framework
+   - Autenticación de usuarios
+
+5. OPTIMIZACIÓN Y TESTING:
+   - Escribir pruebas unitarias
+   - Optimizar consultas de BD
+   - Implementar logging
+   - Preparar para producción
+
+================================================================================
+FIN DE LA DOCUMENTACIÓN
+================================================================================
+
+Esta documentación proporciona una visión completa del estado actual del proyecto
+Reflexo y sirve como guía para cualquier desarrollador que necesite trabajar
+con este sistema de gestión de inventario farmacéutico.
+
+Última actualización: Enero 2025
+Estado: Proyecto base funcional, listo para desarrollo de funcionalidades
