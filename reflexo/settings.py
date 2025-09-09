@@ -80,7 +80,7 @@ DATABASES = {
         'NAME': 'reflexo_db',
         'USER': 'root',
         'PASSWORD': 'rodrigoxd147',
-        'HOST': 'localhost',
+        'HOST': '127.0.0.1',
         'PORT': '3306',
     }
 }
