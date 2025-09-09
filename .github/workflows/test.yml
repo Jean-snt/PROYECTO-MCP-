@@ -1,0 +1,59 @@
+name: Django Test
+
+on:
+  push:
+    branches: [ MCP-REFLEXO, FRONT-END, main ]
+  pull_request:
+    branches: [ MCP-REFLEXO, FRONT-END, main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: reflexo_db
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Configurar Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Instalar dependencias
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Espera a MySQL
+      run: |
+        until mysqladmin ping -h"127.0.0.1" -uroot -proot --silent; do
+          sleep 2
+        done
+
+    - name: Eliminar y crear base de datos
+      run: |
+        mysql -h127.0.0.1 -uroot -proot -e "DROP DATABASE IF EXISTS reflexo_db;"
+        mysql -h127.0.0.1 -uroot -proot -e "CREATE DATABASE reflexo_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+    - name: Correr migraciones
+      run: |
+        python manage.py makemigrations
+        python manage.py migrate
+      env:
+        DJANGO_SETTINGS_MODULE: reflexo.settings
+        # Agrega aquí otras variables de entorno necesarias para tu settings.py
+        # Por ejemplo: DB_HOST, DB_USER, DB_PASSWORD, etc.
+        

@@ -1,0 +1,77 @@
+# ================================================================================
+# REQUIREMENTS.TXT - PROYECTO REFLEXO
+# Sistema de Gestión de Inventario Médico con IA
+# ================================================================================
+
+# Framework Principal
+Django==4.2.24
+
+# Base de Datos
+mysqlclient==2.2.4
+
+# Variables de Entorno
+python-dotenv==1.0.0
+
+# Integración con IA (Google Gemini)
+google-generativeai==0.8.3
+
+# Dependencias de Desarrollo (Opcionales)
+# Descomenta las siguientes líneas si necesitas herramientas de desarrollo
+
+# Testing y Coverage
+# pytest==7.4.4
+# pytest-django==4.8.0
+# coverage==7.4.0
+
+# Linting y Formateo
+# flake8==7.0.0
+# black==24.1.1
+# isort==5.13.2
+
+# Documentación
+# Sphinx==7.2.6
+# sphinx-rtd-theme==2.0.0
+
+# Producción (Descomenta para despliegue)
+# gunicorn==21.2.0
+# whitenoise==6.6.0
+# django-cors-headers==4.3.1
+
+# ================================================================================
+# INSTRUCCIONES DE INSTALACIÓN
+# ================================================================================
+#
+# 1. Crear entorno virtual:
+#    python -m venv venv
+#
+# 2. Activar entorno virtual:
+#    Windows: venv\Scripts\activate
+#    Linux/Mac: source venv/bin/activate
+#
+# 3. Instalar dependencias:
+#    pip install -r requirements.txt
+#
+# 4. Configurar base de datos MySQL:
+#    - Crear base de datos 'BD_REFLEXO'
+#    - Configurar credenciales en settings.py o .env
+#
+# 5. Aplicar migraciones:
+#    python manage.py migrate
+#
+# 6. Crear superusuario (opcional):
+#    python manage.py createsuperuser
+#
+# 7. Ejecutar servidor de desarrollo:
+#    python manage.py runserver
+#
+# ================================================================================
+# NOTAS IMPORTANTES
+# ================================================================================
+#
+# - Asegúrate de tener MySQL Server instalado y ejecutándose
+# - Configura tu GEMINI_API_KEY en el archivo .env
+# - Para producción, cambia DEBUG=False en settings.py
+# - Actualiza SECRET_KEY para producción
+# - Configura ALLOWED_HOSTS apropiadamente
+#
+# ================================================================================
