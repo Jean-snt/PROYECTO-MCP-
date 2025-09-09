@@ -77,9 +77,9 @@ WSGI_APPLICATION = 'reflexo.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'BD_REFLEXO',
+        'NAME': 'reflexo_db',
         'USER': 'root',
-        'PASSWORD': '70526723Martel',
+        'PASSWORD': 'rodrigoxd147',
         'HOST': 'localhost',
         'PORT': '3306',
     }
